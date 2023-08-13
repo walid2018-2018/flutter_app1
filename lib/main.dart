@@ -51,6 +51,7 @@ class MyApp extends StatelessWidget {
 */
 
 import 'package:chat1/Screens/HomePage.dart';
+import 'package:chat1/Screens/chatDetailPage.dart';
 import 'package:chat1/Screens/loginPage.dart';
 import 'package:flutter/material.dart';
 
@@ -72,8 +73,11 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ) ,
       debugShowCheckedModeBanner: false,
-      home: loginPage(),
-     /// home: HomePage(),
+      
+     //  home: ChatDetailPage(user_id: 1, username: 'walid' ), //loginPage(),
+     // rani nsoti login pour tester l'affichage des messages 
+       home: HomePage(user_id: 1, username: 'walid'),
+    
      
     );
   }

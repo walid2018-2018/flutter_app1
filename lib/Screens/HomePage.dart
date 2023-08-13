@@ -1,18 +1,26 @@
-import 'package:chat1/Screens/ChatPage.dart';
 import 'package:flutter/material.dart';
+import'package:chat1/Screens/chatPage.dart';
 
 
 
 class HomePage extends StatefulWidget{
+  int user_id;
+  String username;
+
+  HomePage({required this.user_id,required this.username});
+
+
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ChatPage(),
+      body: ChatPage(user_id: widget.user_id, username: widget.username), 
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Colors.indigo[500],
         unselectedItemColor: Colors.grey.shade600,

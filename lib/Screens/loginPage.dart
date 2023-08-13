@@ -1,5 +1,3 @@
-import 'dart:html';
-
 import 'package:chat1/Screens/HomePage.dart';
 import 'package:chat1/Screens/chatPage.dart';
 import 'package:chat1/Screens/resetpasswordPage.dart';
@@ -22,33 +20,34 @@ class _loginPagetState extends State<loginPage> {
  
 
 
-  Future<bool> AuthenticateUser(String username , String password) async {
-      final url = Uri.parse('http://127.0.0.1/users:8000');
-
-      final body = {
-        username = username ,
-        password = password
-      };
-
+  Future<int> AuthenticateUser(String input_username , String password) async {
+      final url = Uri.parse('http://f6e6-41-106-4-218.ngrok-free.app/login/');
+      final /*Map<String, dynamic> */ body = jsonEncode({
+      
+          'username': input_username,
+          'password': password,
+        });
+          print("******");
+          print(body);
       try {
-       final response = await http.post(url, body: body);
-        if (response.statusCode == 200) {
+       final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
+        if (response.statusCode == 202) {
           // API call succeeded, process the response
           Navigator.push(context, MaterialPageRoute(builder: (context){
-                                                    return HomePage();
+                                                    return HomePage(user_id: 1, username: input_username);  /* 1 c'est le userid*/ 
                                                   }));
-          return true ;
+          return 1 ;
 
           // Handle the response data
         } else {
           // API call failed, handle the error
           print('API call failed with status code: ${response.statusCode}');
-          return false;
+          return 0;
         }
       } catch (error) {
         // Handle any exceptions that occurred during the API call
         print('Error occurred during API call: $error');
-        return false;
+        return 0;
       }
       }
 
@@ -117,8 +116,8 @@ class _loginPagetState extends State<loginPage> {
                   style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.indigo[900]) ),
                   child: const Text('Login'),
                   onPressed: () {
-                  
-                      AuthenticateUser(usernameController.text, passwordController.text);
+                    var userid;
+                      userid = AuthenticateUser(usernameController.text, passwordController.text);
                /*     Navigator.push(context, MaterialPageRoute(builder: (context){
                                                 return HomePage();
                                               }));

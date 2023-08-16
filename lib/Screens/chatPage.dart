@@ -1,3 +1,5 @@
+import 'dart:js_interop';
+
 import 'package:chat1/Screens/helpPage.dart';
 //import 'package:chat1/Screens/loginPage.dart';
 import 'package:chat1/Screens/profilPage.dart';
@@ -6,15 +8,69 @@ import 'package:chat1/widgets/conversationList.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http ;
 import 'dart:convert';
-
+import 'package:chat1/models/user_profil.dart';
+import 'package:provider/provider.dart';
+import 'package:chat1/Screens/loginPage.dart';
+import 'package:provider/provider.dart';
 
  
+
+class RoomsProvider extends ChangeNotifier {
+  List<ChatSite> _chatRooms = [];
+
+  void getRooms(User? user_id) async {
+    final url = Uri.parse('http://localhost');
+    final body = jsonEncode({
+          'user_id': user_id,
+        });
+
+      String URL = "http://localhost/g=user_id";
+     try {
+       final jsonResponse = await http.get(Uri.parse(URL)); 
+      
+        if (jsonResponse.statusCode == 202) {
+          final List responseList = json.decode(jsonResponse.body);
+          
+          for (var j in responseList) {
+            String name = j['title'];
+            String lastMessage = j['Last_message'];
+            String imageURL = j['image'];
+            String time = j['end_session'];
+
+            ChatSite room = ChatSite(name: name, messageText: lastMessage, imageURL: imageURL, time: time);
+            _chatRooms.add(room);
+          }
+        
+          } 
+          else {
+         
+               print('API call failed with status code: ${jsonResponse.statusCode}');
+            
+          }
+     
+      } catch (error) {
+        // Handle any exceptions that occurred during the API call
+        print('Error occurred during API call: $error');
+        throw Exception('Error occurred during API call: $error');
+      }
+       throw Exception('Error');
+      }
+
+    notifyListeners();
+
+
+
+  }
+
+
+
+
+
+
+
 class ChatPage extends StatefulWidget {
 
-  int user_id;
-  String username;
-
-  ChatPage({required this.user_id,required this.username});
+  ChatPage();
 
   @override
   _ChatPageState createState() => _ChatPageState();
@@ -25,49 +81,78 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
 
-  /* fonction new conversation */ 
-  Future<Convo_Message> CreateConv(int userid , String username) async {
-      final url = Uri.parse('http://688b-197-202-251-189.ngrok-free.app/convo/');
-      final body = jsonEncode({
-    
-          'userid': userid,
-          'username': username
+late ChatSite newR;
+
+
+Future<ChatSite> newRoom(User? sender_id) async {
+      final url = Uri.parse('http://localhost');
+      ChatSite Room; 
+      final /*Map<String, dynamic> */ body = jsonEncode({
+          'sender_id': sender_id,
         });
-          print("******");
-          print(body);
-          Conversation? conv = null;
-          Convo_Message? chatuser = null;
-        
+          
       try {
-       final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body); 
-        if (response.statusCode == 202) {
-          // API call succeeded, process the response 
-          conv = Conversation(id: userid, time: DateTime.now().toString());
+       final jsonResponse = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
+        if (jsonResponse.statusCode == 202) {
+          final List response = json.decode(jsonResponse.body);
+          if (response[0]['session'] == true) {   
 
-          final convo_id = 1 ;   /* a récupéré avec get */ 
-
-          chatuser = Convo_Message(convo_id:convo_id , messageText: "Hello welcome in a new conversation with the bot", imageURL: 'assets/images/image1.jpg', time: DateTime.now().toString());
-          return chatuser as Convo_Message ;
-
-          // Handle the response data
-        } else {
-          // API call failed, handle the error
-          print('API call failed with status code: ${response.statusCode}');
-          return chatuser as Convo_Message ;
+            String welcomMessage = "Welcom in your drive test session !" ;
+            String codeSite = response[0]['codeSite'];
+            Room = ChatSite(name: codeSite, messageText: welcomMessage, imageURL:'Assets/images/image1.jpg', time: DateTime.now().toString()); 
+            return Room;
+          } 
+          else {
+            if(response[0]['session'] == false){
+              
+              throw Exception('session failed');
+            }
+            else{
+              print('API call failed with status code: ${jsonResponse.statusCode}');
+              throw Exception('Failed to send message to Rasa');
+             }
+          }
         }
+
       } catch (error) {
         // Handle any exceptions that occurred during the API call
         print('Error occurred during API call: $error');
-        return conv as Convo_Message;
+        throw Exception('Error occurred during API call: $error');
       }
+       throw Exception('Error');
       }
 
 
 
+   Future<void> fetchNewRoom() async {
+    // Fetch the ChatSite using the async function
+    final userprovider = context.watch<UserProvider>();
+
+    ChatSite fetchedNewRoom = await newRoom(userprovider.userId);
+
+    // Update the state to trigger a rebuild
+    setState(() {
+      newR = fetchedNewRoom;
+    });
+  }
 
 
 
- List<ChatSite> chatUsers = [
+
+
+
+
+
+
+bool shouldRebuild = false;
+
+
+
+
+  
+  RoomsProvider Rooms = RoomsProvider();
+  
+ /*List<ChatSite> chatRooms = [
     ChatSite(name: "Site 01", messageText: "Hello i'm in site AL12505 ", imageURL: 'Assets/images/image1.jpg', time: "Now"),
     ChatSite(name: "Site 02", messageText: "That's Great", imageURL: "Assets/images/image2.jpg", time: "Yesterday"),
     ChatSite(name: "Site 03", messageText: "Hey where are you?", imageURL: "Assets/images/image3.jpg", time: "31 Mar"),
@@ -75,9 +160,16 @@ class _ChatPageState extends State<ChatPage> {
     ChatSite(name: "Site 04", messageText: "Thankyou", imageURL: "Assets/images/image5.jpg", time: "23 Mar"),
 
   ];
-
+*/
   @override
   Widget build(BuildContext context) {
+
+final userprovider = context.watch<UserProvider>();
+final roomsprovider = context.watch<RoomsProvider>();
+
+Rooms.getRooms(userprovider.userId);
+
+List<ChatSite> chatRooms = roomsprovider._chatRooms;
    return Scaffold(
       drawer: Drawer(
           child: ListView(
@@ -159,10 +251,7 @@ class _ChatPageState extends State<ChatPage> {
                           TextButton(
                             child: const Text("Add New", style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold , color: Colors.black87),), 
                             onPressed: () {
-
-                              int userid = widget.user_id; 
-                              String username = widget.username;
-                                  CreateConv(userid , username);
+                              fetchNewRoom();
                             }
                             ),         
                         ],
@@ -192,12 +281,12 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
           ListView.builder(
-              itemCount: chatUsers.length,
+              itemCount: chatRooms.length,
               shrinkWrap: true,
               padding: EdgeInsets.only(top: 16),
               physics: NeverScrollableScrollPhysics(),
               itemBuilder: (context, index){
-                return ConversationList(name: chatUsers[index].name , messageText: chatUsers[index].messageText, imageUrl: chatUsers[index].imageURL , time: chatUsers[index].time, isMessageRead: (index == 0 || index == 3)?true:false );
+                return ConversationList(name: chatRooms[index].name , messageText: chatRooms[index].messageText, imageUrl: chatRooms[index].imageURL , time: chatRooms[index].time, isMessageRead: (index == 0 || index == 3)?true:false );
               },
             ),
 

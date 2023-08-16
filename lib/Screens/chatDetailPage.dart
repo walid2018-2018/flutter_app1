@@ -30,8 +30,7 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
     //   'sender_id': sender_id,
           'message': message,
         });
-          print("******");
-          print(body);
+          
       try {
        final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
         if (response.statusCode == 202) {
@@ -52,11 +51,7 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
         }
 
           // Handle the response data
-    //    else {
-          // API call failed, handle the error
-      //    print('API call failed with status code: ${response.statusCode}');
-       //   return false;
-       // }
+
       } catch (error) {
         // Handle any exceptions that occurred during the API call
         print('Error occurred during API call: $error');
@@ -83,15 +78,6 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
 bool shouldRebuild = false;
 
 TextEditingController sendMessageController = TextEditingController();
-
-
-/*List<ChatMessage> messages_list = [
-    ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
-    ChatMessage(messageContent: "How have you been?", messageType: "receiver"),
-    ChatMessage(messageContent: "Hey Kriss, I am doing fine dude. wbu?", messageType: "sender"),
-    ChatMessage(messageContent: "ehhhh, doing OK.", messageType: "receiver"),
-    ChatMessage(messageContent: "Is there any thing wrong?", messageType: "sender"),
-  ];*/
 
 Queue<ChatMessage> messages_queue = ListQueue.of([
     ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
@@ -286,44 +272,9 @@ Future<bool> sendNewMssg(String message) async {
            print('Error occurred during API call: $error');
       }
         
-
-  
-        
-        
-        
         return true ;
-       // padding: EdgeInsets.all(16);
-      //  return  Text(message, style: TextStyle(fontSize: 15),);
-        
 
-  /*    final url = Uri.parse('http://688b-197-202-251-189.ngrok-free.app/messages/');
-      final body = jsonEncode({
-          'message': message,
-        });
-          print("******");
-          print(body);
-         
-      try {
-       final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body); 
-        if (response.statusCode == 202) {
-          // API call succeeded, process the response 
-       
-
-
-       return "User is created successfully" ;
-
-          // Handle the response data
-        } else {
-          // API call failed, handle the error
-          print('API call failed with status code: ${response.statusCode}');
-          return "Failed to create user" ;
-        }
-      } catch (error) {
-        // Handle any exceptions that occurred during the API call
-        print('Error occurred during API call: $error');
-        return "failed";
-      }
- */      }
+    }
 
 
   

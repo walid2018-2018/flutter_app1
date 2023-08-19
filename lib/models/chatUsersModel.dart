@@ -5,7 +5,8 @@ class ChatSite{
   String messageText;
   String imageURL;
   String time;
-  ChatSite({required this.name ,required this.messageText,required this.imageURL,required this.time}); 
+  int id;
+  ChatSite({required this.name ,required this.messageText,required this.imageURL,required this.time, required this.id}); 
 
 }
 

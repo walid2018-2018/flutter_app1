@@ -7,7 +7,8 @@ class ConversationList extends StatefulWidget{
   String imageUrl;
   String time;
   bool isMessageRead;
-  ConversationList({required this.name,required this.messageText,required this.imageUrl,required this.time,required this.isMessageRead});
+  int id;
+  ConversationList({required this.name,required this.messageText,required this.imageUrl,required this.time,required this.isMessageRead, required this.id});
   @override
   _ConversationListState createState() => _ConversationListState();
 }
@@ -17,7 +18,7 @@ class _ConversationListState extends State<ConversationList> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: (){ Navigator.push(context, MaterialPageRoute(builder: (context){
-          return ChatDetailPage(user_id: 1, username: 'walid');
+          return ChatDetailPage( conversation_id:widget.id, roomprovider: null);
         }));
       },
       child: Container(

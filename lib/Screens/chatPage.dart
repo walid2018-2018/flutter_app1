@@ -1,3 +1,7 @@
+
+import 'dart:ffi';
+
+import 'package:chat1/Screens/chatDetailPage.dart';
 import 'package:chat1/Screens/helpPage.dart';
 //import 'package:chat1/Screens/loginPage.dart';
 import 'package:chat1/Screens/profilPage.dart';
@@ -6,78 +10,136 @@ import 'package:chat1/widgets/conversationList.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http ;
 import 'dart:convert';
-
+import 'package:chat1/models/user_profil.dart';
+import 'package:provider/provider.dart';
+import 'package:chat1/Screens/loginPage.dart';
 
  
+
+class RoomsProvider extends ChangeNotifier {
+  List<ChatSite> _chatRooms = [];
+  List<ChatSite> getstateRooms() => _chatRooms;
+  int? currentsession =null;
+
+  int? getCurrentSession ()=> currentsession;
+  void getRooms(int user_id) async {
+    final url = Uri.parse('http://localhost');
+    final body = jsonEncode({
+          'user_id': user_id,
+        });
+
+      String URL = "http://e5c5-41-108-115-212.ngrok-free.app/dtsession/?g=1";
+     try {
+       final jsonResponse = await http.get(Uri.parse(URL)); 
+      
+        if (jsonResponse.statusCode == 200) {
+          final List responseList = json.decode(jsonResponse.body);
+          
+          for (var j in responseList) {
+            String name = j['title'];
+            String lastMessage = j['startDate'];
+            String imageURL = "Assets/images/image2.jpg";
+            String time = j['endDate'];
+            int id= j['id'];
+            print("ididid"+id.toString());
+            ChatSite room = ChatSite(name: name, messageText: lastMessage, imageURL: imageURL, time: time, id: id);
+            _chatRooms.add(room);
+          }
+          print("hehehe"+_chatRooms.toString());
+                    notifyListeners();
+
+          } 
+          else {
+         
+               print('API call failed with status code: ${jsonResponse.statusCode}');
+            
+          }
+     
+      } catch (error) {
+        // Handle any exceptions that occurred during the API call
+        print('Error occurred during API call: $error');
+        throw Exception('Error occurred during API call: $error');
+      }
+       throw Exception('Error');
+      }
+
+    Future checkIswithinTimeframe(int user_id) async {
+
+
+      String URL = "http://e5c5-41-108-115-212.ngrok-free.app/isintimeframe/3";
+     try {
+       final jsonResponse = await http.get(Uri.parse(URL)); 
+      
+        if (jsonResponse.statusCode == 200) {
+          var responseList = json.decode(jsonResponse.body);
+          for (var i in responseList){
+           currentsession=i;
+          }
+          
+         
+           notifyListeners();         
+          } 
+          else {
+         
+               print('API call failed with status code: ${jsonResponse.statusCode}');
+            
+          }
+     
+      } catch (error) {
+        // Handle any exceptions that occurred during the API call
+        print('Error occurred during API call: $error');
+        throw Exception('Error occurred during API call: $error');
+      }
+      }
+
+
+
+  }
+
+
+
+
+
+
+
 class ChatPage extends StatefulWidget {
 
-  int user_id;
-  String username;
-
-  ChatPage({required this.user_id,required this.username});
-
+//  ChatPage();
+  const ChatPage({super.key,  required this.user});
+  
+  final UserProvider user;
   @override
   _ChatPageState createState() => _ChatPageState();
 
 }
 
 
-
+RoomsProvider rooms=RoomsProvider();
 class _ChatPageState extends State<ChatPage> {
 
-  /* fonction new conversation */ 
-  Future<Convo_Message> CreateConv(int userid , String username) async {
-      final url = Uri.parse('http://688b-197-202-251-189.ngrok-free.app/convo/');
-      final body = jsonEncode({
+@override
+  void initState() {
     
-          'userid': userid,
-          'username': username
-        });
-          print("******");
-          print(body);
-          Conversation? conv = null;
-          Convo_Message? chatuser = null;
-        
-      try {
-       final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body); 
-        if (response.statusCode == 202) {
-          // API call succeeded, process the response 
-          conv = Conversation(id: userid, time: DateTime.now().toString());
+    super.initState();
+    rooms.getRooms(user.getuserId()!);
+    // 2
+    rooms.addListener(() => mounted ? setState(() { null;}) : null);
+  }
 
-          final convo_id = 1 ;   /* a récupéré avec get */ 
-
-          chatuser = Convo_Message(convo_id:convo_id , messageText: "Hello welcome in a new conversation with the bot", imageURL: 'assets/images/image1.jpg', time: DateTime.now().toString());
-          return chatuser as Convo_Message ;
-
-          // Handle the response data
-        } else {
-          // API call failed, handle the error
-          print('API call failed with status code: ${response.statusCode}');
-          return chatuser as Convo_Message ;
-        }
-      } catch (error) {
-        // Handle any exceptions that occurred during the API call
-        print('Error occurred during API call: $error');
-        return conv as Convo_Message;
-      }
-      }
-
-
-
-
-
-
- List<ChatSite> chatUsers = [
-    ChatSite(name: "Site 01", messageText: "Hello i'm in site AL12505 ", imageURL: 'Assets/images/image1.jpg', time: "Now"),
-    ChatSite(name: "Site 02", messageText: "That's Great", imageURL: "Assets/images/image2.jpg", time: "Yesterday"),
-    ChatSite(name: "Site 03", messageText: "Hey where are you?", imageURL: "Assets/images/image3.jpg", time: "31 Mar"),
-    ChatSite(name: "Site 04", messageText: "Busy! Call me in 20 mins", imageURL: "Assets/images/image4.jpg", time: "28 Mar"),
-    ChatSite(name: "Site 04", messageText: "Thankyou", imageURL: "Assets/images/image5.jpg", time: "23 Mar"),
-
+ List<ChatSite>? chatRooms = [
+    ChatSite(name: "Site 01", messageText: "Hello i'm in site AL12505 ", imageURL: 'Assets/images/image1.jpg', time: "Now",id: 1),
+    ChatSite(name: "Site 02", messageText: "That's Great", imageURL: "Assets/images/image2.jpg", time: "Yesterday",id: 2),
+    ChatSite(name: "Site 03", messageText: "Hey where are you?", imageURL: "Assets/images/image3.jpg", time: "31 Mar",id: 3),
+    ChatSite(name: "Site 04", messageText: "Busy! Call me in 20 mins", imageURL: "Assets/images/image4.jpg", time: "28 Mar",id: 4),
+    ChatSite(name: "Site 04", messageText: "Thankyou", imageURL: "Assets/images/image5.jpg", time: "23 Mar",id: 5),
   ];
 
   @override
   Widget build(BuildContext context) {
+    chatRooms=rooms.getstateRooms();
+    
+
+    print("hello"+user.getuserId().toString());
    return Scaffold(
       drawer: Drawer(
           child: ListView(
@@ -158,11 +220,20 @@ class _ChatPageState extends State<ChatPage> {
                           SizedBox(width: 2,),
                           TextButton(
                             child: const Text("Add New", style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold , color: Colors.black87),), 
-                            onPressed: () {
+                            onPressed: () async {
+                              await rooms.checkIswithinTimeframe(user.getuserId()!);
 
-                              int userid = widget.user_id; 
-                              String username = widget.username;
-                                  CreateConv(userid , username);
+                              if(rooms.getCurrentSession() != null){
+                                                  print("ehe"+rooms.getCurrentSession().toString());
+                                                  // ignore: use_build_context_synchronously
+                                                  Navigator.push(context, MaterialPageRoute(builder: (context){
+                                                return ChatDetailPage( conversation_id:rooms.getCurrentSession()!.toInt(),roomprovider: rooms);
+                                              }));
+                                                }
+                                                else{
+                                                  print("doesn't exist");
+                                                }
+                              
                             }
                             ),         
                         ],
@@ -192,12 +263,13 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
           ListView.builder(
-              itemCount: chatUsers.length,
+              itemCount: chatRooms?.length,
               shrinkWrap: true,
               padding: EdgeInsets.only(top: 16),
               physics: NeverScrollableScrollPhysics(),
               itemBuilder: (context, index){
-                return ConversationList(name: chatUsers[index].name , messageText: chatUsers[index].messageText, imageUrl: chatUsers[index].imageURL , time: chatUsers[index].time, isMessageRead: (index == 0 || index == 3)?true:false );
+                
+                return ConversationList(name: chatRooms![index].name, messageText: chatRooms![index].messageText, imageUrl: chatRooms![index].imageURL , time: chatRooms![index].time, isMessageRead: (index == 0 || index == 3)?true:false, id:chatRooms![index].id  );
               },
             ),
 

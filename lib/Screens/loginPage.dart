@@ -1,3 +1,4 @@
+
 import 'package:chat1/Screens/HomePage.dart';
 import 'package:chat1/Screens/chatPage.dart';
 import 'package:chat1/Screens/resetpasswordPage.dart';
@@ -5,6 +6,8 @@ import 'package:chat1/Screens/resgistrationPage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http ;
 import 'dart:convert';
+import 'package:chat1/models/user_profil.dart';
+import 'package:provider/provider.dart';
  
  
 class loginPage extends StatefulWidget {
@@ -14,14 +17,12 @@ class loginPage extends StatefulWidget {
 }
 
 
-class _loginPagetState extends State<loginPage> {
-  TextEditingController usernameController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
- 
-
-
-  Future<int> AuthenticateUser(String input_username , String password) async {
-      final url = Uri.parse('http://f6e6-41-106-4-218.ngrok-free.app/login/');
+class UserProvider extends ChangeNotifier {
+  int? userId; 
+  
+  int? getuserId() => userId;
+  Future AuthenticateUser(String input_username , String password) async {
+      final url = Uri.parse('http://e5c5-41-108-115-212.ngrok-free.app/login/');
       final /*Map<String, dynamic> */ body = jsonEncode({
       
           'username': input_username,
@@ -32,28 +33,49 @@ class _loginPagetState extends State<loginPage> {
       try {
        final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
         if (response.statusCode == 202) {
-          // API call succeeded, process the response
-          Navigator.push(context, MaterialPageRoute(builder: (context){
-                                                    return HomePage(user_id: 1, username: input_username);  /* 1 c'est le userid*/ 
-                                                  }));
-          return 1 ;
-
+          userId = json.decode(response.body)["id"];
+          notifyListeners();
+      
+       /*   
+*/
+      
           // Handle the response data
         } else {
           // API call failed, handle the error
+          userId= null;
           print('API call failed with status code: ${response.statusCode}');
-          return 0;
+          notifyListeners();
         }
       } catch (error) {
         // Handle any exceptions that occurred during the API call
         print('Error occurred during API call: $error');
-        return 0;
+  
       }
       }
+}
+
+UserProvider user = UserProvider();
+class _loginPagetState extends State<loginPage> {
+
+  @override
+  void initState() {
+    super.initState();
+    // 2
+    user.addListener(() => mounted ? setState(() {return null;}) : null);
+  }
+  
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+ 
+
 
 
   @override
   Widget build(BuildContext context) {
+   
+    final userprovider = user.userId;
+
+
     return /*Padding*/ Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(10),
@@ -115,14 +137,16 @@ class _loginPagetState extends State<loginPage> {
                 child: ElevatedButton(
                   style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.indigo[900]) ),
                   child: const Text('Login'),
-                  onPressed: () {
-                    var userid;
-                      userid = AuthenticateUser(usernameController.text, passwordController.text);
-               /*     Navigator.push(context, MaterialPageRoute(builder: (context){
-                                                return HomePage();
-                                              }));
-*/
+                  onPressed: () async {
 
+                    await user.AuthenticateUser(usernameController.text, passwordController.text);
+                    
+                    if(user.getuserId() != null){
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                                                return HomePage(user: user);
+                                              }));
+                    }
+                    print(user.getuserId());
                     print(usernameController.text);
                     print(passwordController.text);
                   },

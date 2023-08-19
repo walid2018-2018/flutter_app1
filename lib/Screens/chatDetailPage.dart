@@ -1,28 +1,113 @@
+import 'dart:async';
 import 'dart:collection';
 
+import 'package:chat1/Screens/chatPage.dart';
 import 'package:chat1/models/chatMessageModel.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http ;
 import 'dart:convert';
+import 'package:provider/provider.dart';
+
+
+class ConversationHistoryProvider extends ChangeNotifier {
+  Queue<ChatMessage> _messages_queue = Queue<ChatMessage>();
+  Queue<ChatMessage> getConversationHistory() => _messages_queue;
+
+  void getHistory(int conversation_id) async {
+    final url = Uri.parse('http://localhost');
+
+      print('ehehehehehehehehehe'+conversation_id.toString());
+      String URL = "http://e5c5-41-108-115-212.ngrok-free.app/event/"+conversation_id.toString();
+     try {
+       final jsonResponse = await http.get(Uri.parse(URL)); 
+      
+        if (jsonResponse.statusCode == 200) {
+          final List responseList = json.decode(jsonResponse.body);
+          
+          for (var j in responseList) {
+            String messageType = j['type_name'];
+            String messageContent = '';
+
+            if (messageType == "user") {
+              messageContent=j['data']['text'];
+              messageType="sender";
+              }
+            else{
+              if( messageType=="bot"){
+                messageContent=j['data']['text'];
+                }
+              else{
+                if (j['data']['action_text'] != null){
+                  messageContent=j['data']['action_text'];
+                }
+                else
+                {
+                  messageContent=j['action_name'];
+                }
+             
+              }              messageType="receiver";
+
+           
+          }
+            ChatMessage singlemessage =  ChatMessage(messageContent: messageContent, messageType: messageType);
+
+            _messages_queue.add(singlemessage);
+          print("hehehe"+_messages_queue.toString());
+                    notifyListeners();
+
+          } 
+         }
+          else {
+         
+               print('API call failed with status code: ${jsonResponse.statusCode}');
+            
+          }
+      }
+      catch (error) {
+        // Handle any exceptions that occurred during the API call
+        print('Error occurred during API call: $error');
+        throw Exception('Error occurred during API call: $error');
+      }
+      }
+
+
+
+
+
+  }
+
 
 class ChatDetailPage extends StatefulWidget{
 
-  int user_id;
-  String username;
 
-  ChatDetailPage({required this.user_id,required this.username});
+  ChatDetailPage({required this.conversation_id, this.roomprovider});
 
- 
-
-
-
+  final int conversation_id;
+  final RoomsProvider? roomprovider;
   @override
   _ChatDetailPageState createState() => _ChatDetailPageState();
 }
 
 class _ChatDetailPageState extends State<ChatDetailPage> {
+
 //List<ChatMessage> list_Q_R = [];
 
+
+ConversationHistoryProvider conversation=ConversationHistoryProvider();
+
+
+
+@override
+  void initState() {
+    
+    super.initState();
+ 
+    conversation.getHistory(widget.conversation_id);
+    conversation.addListener(() => mounted ? setState(() { null;}) : null);
+
+    
+  }
 Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
       final url = Uri.parse('http://4624-41-108-100-124.ngrok-free.app/webhooks/rest/webhook');
       final /*Map<String, dynamic> */ body = jsonEncode({
@@ -30,8 +115,7 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
        'sender_id': sender_id,
           'message': message,
         });
-          print("******");
-          print(body);
+          
       try {
        var response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
         var jsonResponse = json.decode(response.body);
@@ -41,26 +125,20 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
           if (jsonResponse.isNotEmpty) {
             print("----------------------");
             print(jsonResponse);
-            return [ChatMessage(messageContent: message, messageType: "sender"),ChatMessage(messageContent: jsonResponse[0]['text'] , messageType: "receiver")];  // Assuming Rasa returns a 'text' key
+            return [ChatMessage(messageContent: message, messageType: "sender"),ChatMessage(messageContent: jsonResponse[0]["text"] , messageType: "receiver")];  // Assuming Rasa returns a 'text' key
           } 
           else {
             if(jsonResponse.isEmpty){
-              throw Exception('Rasa response was empty');
             }
             else{
               print('API call failed with status code: ${response.statusCode}');
-              throw Exception('Failed to send message to Rasa');
              }
           }
               //return true;
       
 
           // Handle the response data
-    //    else {
-          // API call failed, handle the error
-      //    print('API call failed with status code: ${response.statusCode}');
-       //   return false;
-       // }
+
       } catch (error) {
         // Handle any exceptions that occurred during the API call
         print('Error occurred during API call: $error');
@@ -88,15 +166,6 @@ bool shouldRebuild = false;
 
 TextEditingController sendMessageController = TextEditingController();
 
-
-/*List<ChatMessage> messages_list = [
-    ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
-    ChatMessage(messageContent: "How have you been?", messageType: "receiver"),
-    ChatMessage(messageContent: "Hey Kriss, I am doing fine dude. wbu?", messageType: "sender"),
-    ChatMessage(messageContent: "ehhhh, doing OK.", messageType: "receiver"),
-    ChatMessage(messageContent: "Is there any thing wrong?", messageType: "sender"),
-  ];*/
-
 Queue<ChatMessage> messages_queue = ListQueue.of([
     ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
     ChatMessage(messageContent: "How have you been?", messageType: "receiver"),
@@ -115,12 +184,30 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
     ChatMessage(messageContent: "Is there any thing wrong?", messageType: "sender"),
   ]
   );
-
+ @override
+  void didChangeDependencies() {
+    print("didChangeDependencies");
+    super.didChangeDependencies();
+  }
 
   @override
   Widget build(BuildContext context) {
+    ScrollController _scrollController = ScrollController();
+
+    void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300), curve: Curves.elasticOut);
+    } else {
+      Timer(Duration(milliseconds: 400), () => _scrollToBottom());
+    }
+ }
+WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+     print("affiche"+widget.conversation_id.toString());
+     
+    messages_queue=conversation.getConversationHistory();
+
      List<ChatMessage> messages = messages_queue.toList();
-   
    return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -164,8 +251,9 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
             
         children: <Widget>[
           Flexible(child: ListView.builder(
+              controller: _scrollController,
               itemCount: messages.length,
-              shrinkWrap: true,
+              shrinkWrap: false,
               padding: EdgeInsets.only(top: 10,bottom: 10),
          //     physics: NeverScrollableScrollPhysics(),
               itemBuilder: (context, index){
@@ -191,15 +279,15 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
             ),
           ),
           Align(
-            alignment: Alignment.bottomLeft,
+            alignment: Alignment.bottomCenter,
             child: Container(
               padding: EdgeInsets.only(left: 10,bottom: 10,top: 10),
               height: 60,
               width: double.infinity,
               color: Colors.white,
-              child: Row(
+              child: widget.roomprovider?.getCurrentSession()!=null ? Row(
                 children: <Widget>[
-                  GestureDetector(
+                   GestureDetector(
                     onTap: (){
                     },
                     child: Container(
@@ -214,7 +302,7 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
                   ),
                   SizedBox(width: 15,),
                   Expanded(
-                    child: TextField(
+                    child: widget.roomprovider?.getCurrentSession()!=null ? TextField(
                       decoration: InputDecoration(
                         hintText: "Write message...",
                         hintStyle: TextStyle(color: Colors.black54),
@@ -222,17 +310,23 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
                         
                       ),
                       controller: sendMessageController
-                    ),
+                    ): SizedBox() ,
                   ),
                   SizedBox(width: 15,),
                   FloatingActionButton(
-                    onPressed: (){
+                    onPressed: () async {
                      
                       if(sendMessageController.text.isNotEmpty){
-                     //   sendNewMssg(sendMessageController.text);
-                        String mssg = sendMessageController.text;
-                        messages_queue.add(ChatMessage(messageContent: mssg, messageType: "sender"));
-                        fetchDataAndAssign(1 , mssg);
+                        await sendNewMssg(sendMessageController.text);
+                        SchedulerBinding.instance.addPostFrameCallback((_) {
+                 _scrollController.animateTo(
+                 _scrollController.position.maxScrollExtent,
+                 duration: const Duration(milliseconds: 1),
+                 curve: Curves.fastOutSlowIn);
+                 });
+                        //String mssg = sendMessageController.text;
+                        //messages_queue.add(ChatMessage(messageContent: mssg, messageType: "sender"));
+                        //fetchDataAndAssign(1 , mssg);
                        
                        
                        // Queue<ChatMessage> list_q_r = sendMssgRasa(1,mssg); // list contiens querry and response 
@@ -249,7 +343,7 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
                   ),
                 ],
                 
-              ),
+              ): SizedBox(),
             ),
           ),
         ],
@@ -263,10 +357,10 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
 Future<bool> sendNewMssg(String message) async {
         ChatMessage newMssg =  ChatMessage(messageContent: message, messageType: "sender");
         
-      final url = Uri.parse('http://f6e6-41-106-4-218.ngrok-free.app/messages/'); // rasa API server url  
+      final url = Uri.parse('http://e5c5-41-108-115-212.ngrok-free.app/botmessage/'); // rasa API server url  
       final /*Map<String, dynamic> */ body = jsonEncode({
       
-          'Sender_id': widget.user_id, 
+          'sender': widget.conversation_id.toString(), 
           'message': message,
         });
           print("******");
@@ -274,14 +368,17 @@ Future<bool> sendNewMssg(String message) async {
       
       try {
        final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
-        if (response.statusCode == 202) {
+        if (response.statusCode == 200) {
           // API call succeeded, process the response
           setState(() {
           messages_queue.add(newMssg);
-                      
+          ChatMessage reveivedMessage =  ChatMessage(messageContent: json.decode(response.body)[0]['text'], messageType: "receiver");
+          messages_queue.add(reveivedMessage); 
+      
      // messages_queue.add(newMssg);
         /* clear write text feiled */
         sendMessageController.clear();
+        
              });}
              else{
                   print('API call failed with status code: ${response.statusCode}');
@@ -291,44 +388,9 @@ Future<bool> sendNewMssg(String message) async {
            print('Error occurred during API call: $error');
       }
         
-
-  
-        
-        
-        
         return true ;
-       // padding: EdgeInsets.all(16);
-      //  return  Text(message, style: TextStyle(fontSize: 15),);
-        
 
-  /*    final url = Uri.parse('http://688b-197-202-251-189.ngrok-free.app/messages/');
-      final body = jsonEncode({
-          'message': message,
-        });
-          print("******");
-          print(body);
-         
-      try {
-       final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body); 
-        if (response.statusCode == 202) {
-          // API call succeeded, process the response 
-       
-
-
-       return "User is created successfully" ;
-
-          // Handle the response data
-        } else {
-          // API call failed, handle the error
-          print('API call failed with status code: ${response.statusCode}');
-          return "Failed to create user" ;
-        }
-      } catch (error) {
-        // Handle any exceptions that occurred during the API call
-        print('Error occurred during API call: $error');
-        return "failed";
-      }
- */      }
+    }
 
 
   

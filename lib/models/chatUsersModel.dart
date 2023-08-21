@@ -25,3 +25,15 @@ class Convo_Message{
   String time;
   Convo_Message({required this.convo_id ,required this.messageText,required this.imageURL,required this.time});
 }
+
+
+class Profile{
+  String username;
+  String first_name;
+  String last_name;
+  String email;
+  String last_login;
+  String avatar="/static/default.jpg";
+
+  Profile({required this.username, required this.first_name, required this.last_name, required this.last_login, required this.email, required this.avatar});
+}

@@ -13,7 +13,7 @@ import 'dart:convert';
 import 'package:chat1/models/user_profil.dart';
 import 'package:provider/provider.dart';
 import 'package:chat1/Screens/loginPage.dart';
-
+import 'package:chat1/models/globals.dart' as globals ;
  
 
 class RoomsProvider extends ChangeNotifier {
@@ -23,12 +23,13 @@ class RoomsProvider extends ChangeNotifier {
 
   int? getCurrentSession ()=> currentsession;
   void getRooms(int user_id) async {
+    _chatRooms.clear();
     final url = Uri.parse('http://localhost');
     final body = jsonEncode({
           'user_id': user_id,
         });
 
-      String URL = "http://e5c5-41-108-115-212.ngrok-free.app/dtsession/?g=1";
+      String URL = globals.apiUrl+"/dtsession/?g=1";
      try {
        final jsonResponse = await http.get(Uri.parse(URL)); 
       
@@ -66,7 +67,7 @@ class RoomsProvider extends ChangeNotifier {
     Future checkIswithinTimeframe(int user_id) async {
 
 
-      String URL = "http://e5c5-41-108-115-212.ngrok-free.app/isintimeframe/3";
+      String URL = globals.apiUrl+"/isintimeframe/3";
      try {
        final jsonResponse = await http.get(Uri.parse(URL)); 
       
@@ -117,6 +118,35 @@ class ChatPage extends StatefulWidget {
 RoomsProvider rooms=RoomsProvider();
 class _ChatPageState extends State<ChatPage> {
 
+Future<void> _showMyDialog() async {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false, // user must tap button!
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Session not planned'),
+        content: const SingleChildScrollView(
+          child: ListBody(
+            children: <Widget>[
+              Text('Contact providers for a planned session.'),
+              Text('your next session isn"t until'),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Ok'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
 @override
   void initState() {
     
@@ -133,6 +163,7 @@ class _ChatPageState extends State<ChatPage> {
     ChatSite(name: "Site 04", messageText: "Busy! Call me in 20 mins", imageURL: "Assets/images/image4.jpg", time: "28 Mar",id: 4),
     ChatSite(name: "Site 04", messageText: "Thankyou", imageURL: "Assets/images/image5.jpg", time: "23 Mar",id: 5),
   ];
+  bool isSwitched= globals.french; 
 
   @override
   Widget build(BuildContext context) {
@@ -148,14 +179,36 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           const DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.indigo,
+              color: Color.fromARGB(255, 58, 147, 189),
             ),
             child: Text(
-              'Dashboard',
-              style: TextStyle(fontSize: 35 , fontWeight: FontWeight.bold , color: Colors.black54),
+              'Drive test assistant',
+              style: TextStyle(fontSize: 35 , fontWeight: FontWeight.bold , color: Colors.white38),
               
               ),        
-          ),
+          ),Padding(padding: EdgeInsets.fromLTRB(20, 0, 0, 0), child:Row(
+            
+            children:<Widget>[Text(
+              globals.french ? "French" : "English",
+              style: TextStyle(
+                color: Colors.black54,
+                fontWeight: FontWeight.normal,
+                fontSize: 28,
+              ),          
+                ),
+Switch(value: isSwitched , onChanged: (value){
+
+  globals.french= !globals.french ;
+  print("glooo"+globals.french.toString());
+  setState((){
+    isSwitched=value;
+  });
+})]
+            ,
+          ),)
+          
+          ,
+
           ListTile(
             leading: Icon(
               Icons.home,
@@ -231,6 +284,7 @@ class _ChatPageState extends State<ChatPage> {
                                               }));
                                                 }
                                                 else{
+                                                  _showMyDialog();
                                                   print("doesn't exist");
                                                 }
                               

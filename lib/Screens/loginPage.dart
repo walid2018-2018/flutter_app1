@@ -8,8 +8,7 @@ import 'package:http/http.dart' as http ;
 import 'dart:convert';
 import 'package:chat1/models/user_profil.dart';
 import 'package:provider/provider.dart';
- 
- 
+ import 'package:chat1/models/globals.dart' as globals;
 class loginPage extends StatefulWidget {
   @override
     _loginPagetState createState() => _loginPagetState(); 
@@ -22,7 +21,7 @@ class UserProvider extends ChangeNotifier {
   
   int? getuserId() => userId;
   Future AuthenticateUser(String input_username , String password) async {
-      final url = Uri.parse('http://e5c5-41-108-115-212.ngrok-free.app/login/');
+      final url = Uri.parse(globals.apiUrl+'/login/');
       final /*Map<String, dynamic> */ body = jsonEncode({
       
           'username': input_username,
@@ -34,16 +33,31 @@ class UserProvider extends ChangeNotifier {
        final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
         if (response.statusCode == 202) {
           userId = json.decode(response.body)["id"];
+          globals.userprofile.email=json.decode(response.body)["email"];
+          globals.userprofile.first_name=json.decode(response.body)["first_name"];
+          globals.userprofile.last_name=json.decode(response.body)["last_name"];
+          globals.userprofile.username=json.decode(response.body)["username"];
+          globals.userprofile.last_login=json.decode(response.body)["last_login"];
           notifyListeners();
-      
-       /*   
-*/
-      
+          globals.isLoggedIn=true;       
+          
+          final tokenUrl=globals.apiUrl+"/api-token-auth/";
+          final request= await http.post(Uri.parse(tokenUrl),headers: {'Content-Type': 'application/json'} ,body: body);
+          if (request.statusCode == 200) {
+              globals.token=json.decode(request.body)["token"]!;
+          }
+          final request2= await http.get(Uri.parse(globals.apiUrl+"/profile/?id="+userId.toString()));
+          if( request2.statusCode==200){
+            globals.userprofile.avatar=json.decode(request2.body)["avatar"]!;
+          }
           // Handle the response data
         } else {
           // API call failed, handle the error
+         
           userId= null;
-          print('API call failed with status code: ${response.statusCode}');
+          globals.isLoggedIn=false;        
+
+          print('API call failed with status code: ${response}');
           notifyListeners();
         }
       } catch (error) {

@@ -8,7 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http ;
 import 'dart:convert';
 import 'package:provider/provider.dart';
-
+import 'package:chat1/models/globals.dart' as globals;
 
 class ConversationHistoryProvider extends ChangeNotifier {
   Queue<ChatMessage> _messages_queue = Queue<ChatMessage>();
@@ -18,7 +18,7 @@ class ConversationHistoryProvider extends ChangeNotifier {
     final url = Uri.parse('http://localhost');
 
       print('ehehehehehehehehehe'+conversation_id.toString());
-      String URL = "http://e5c5-41-108-115-212.ngrok-free.app/event/"+conversation_id.toString();
+      String URL = globals.apiUrl+"/event/"+conversation_id.toString();
      try {
        final jsonResponse = await http.get(Uri.parse(URL)); 
       
@@ -109,7 +109,7 @@ ConversationHistoryProvider conversation=ConversationHistoryProvider();
     
   }
 Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
-      final url = Uri.parse('http://4624-41-108-100-124.ngrok-free.app/webhooks/rest/webhook');
+      final url = Uri.parse(globals.apiUrl+'/webhooks/rest/webhook');
       final /*Map<String, dynamic> */ body = jsonEncode({
       
        'sender_id': sender_id,

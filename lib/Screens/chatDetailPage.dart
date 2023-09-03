@@ -9,6 +9,10 @@ import 'package:http/http.dart' as http ;
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:chat1/models/globals.dart' as globals;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+
+
+
 
 class ConversationHistoryProvider extends ChangeNotifier {
   Queue<ChatMessage> _messages_queue = Queue<ChatMessage>();
@@ -17,7 +21,6 @@ class ConversationHistoryProvider extends ChangeNotifier {
   void getHistory(int conversation_id) async {
     final url = Uri.parse('http://localhost');
 
-      print('ehehehehehehehehehe'+conversation_id.toString());
       String URL = globals.apiUrl+"/event/"+conversation_id.toString();
      try {
        final jsonResponse = await http.get(Uri.parse(URL)); 
@@ -53,7 +56,6 @@ class ConversationHistoryProvider extends ChangeNotifier {
             ChatMessage singlemessage =  ChatMessage(messageContent: messageContent, messageType: messageType);
 
             _messages_queue.add(singlemessage);
-          print("hehehe"+_messages_queue.toString());
                     notifyListeners();
 
           } 
@@ -70,10 +72,17 @@ class ConversationHistoryProvider extends ChangeNotifier {
         throw Exception('Error occurred during API call: $error');
       }
       }
+      
+    void addsocketResponseToContainer(ChatMessage singlemessage) async {
 
-
-
-
+      _messages_queue.add(singlemessage);
+                    notifyListeners();
+    }
+    
+    void addSocketEmitToContainer(ChatMessage singlemessage) async{
+      _messages_queue.add(singlemessage);
+                    notifyListeners();
+    }
 
   }
 
@@ -96,7 +105,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
 ConversationHistoryProvider conversation=ConversationHistoryProvider();
 
-
+late IO.Socket socket;
 
 @override
   void initState() {
@@ -105,9 +114,49 @@ ConversationHistoryProvider conversation=ConversationHistoryProvider();
  
     conversation.getHistory(widget.conversation_id);
     conversation.addListener(() => mounted ? setState(() { null;}) : null);
-
-    
+    initSocket();    
   }
+  
+  initSocket() {
+  print(globals.apiUrl);
+  socket = IO.io(globals.socketurl, <String, dynamic>{
+    'autoConnect': true,
+    'transports': ['websocket'],
+  });  socket.connect();
+  socket.onConnect((_) {
+    print('Connection established');
+    Map joinjson={
+    'roomID': widget.conversation_id,
+    'userName': "globals.userprofile.username"
+  };
+
+    socket.emit('join-room',joinjson);
+    socket.on('receive-message', (newMessage) {
+      //Map<String,dynamic> jsonmap=json.decode(newMessage.toString());
+      if (socket.id!=newMessage['socket_id']) {
+      ChatMessage reveivedMessage =  ChatMessage(messageContent: newMessage['text'], messageType: "receiver");
+          print("hehehehehehehehehehhehehehee"+newMessage.toString());
+          conversation.addsocketResponseToContainer(reveivedMessage);
+      }
+});
+    socket.off('receive-message', (data) {
+  print('message updating: $data');
+}
+);
+  });  
+
+
+  socket.onDisconnect((_) => print('Connection Disconnection'));
+  socket.onConnectError((err) => print(err));
+  socket.onError((err) => print(err));
+}
+
+@override
+void dispose() {
+  socket.disconnect();
+  socket.dispose();
+  super.dispose();
+}
 Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
       final url = Uri.parse(globals.apiUrl+'/webhooks/rest/webhook');
       final /*Map<String, dynamic> */ body = jsonEncode({
@@ -124,7 +173,7 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
           
           if (jsonResponse.isNotEmpty) {
             print("----------------------");
-            print(jsonResponse);
+            print(jsonResponse); //consider multiple dispatches from rasa actions
             return [ChatMessage(messageContent: message, messageType: "sender"),ChatMessage(messageContent: jsonResponse[0]["text"] , messageType: "receiver")];  // Assuming Rasa returns a 'text' key
           } 
           else {
@@ -167,21 +216,16 @@ bool shouldRebuild = false;
 TextEditingController sendMessageController = TextEditingController();
 
 Queue<ChatMessage> messages_queue = ListQueue.of([
-    ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
-    ChatMessage(messageContent: "How have you been?", messageType: "receiver"),
-    ChatMessage(messageContent: "Hey Kriss, I am doing fine dude. wbu?", messageType: "sender"),
-    ChatMessage(messageContent: "ehhhh, doing OK.", messageType: "receiver"),
-    ChatMessage(messageContent: "Is there any thing wrong?", messageType: "sender"),
-    ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
-    ChatMessage(messageContent: "How have you been?", messageType: "receiver"),
-    ChatMessage(messageContent: "Hey Kriss, I am doing fine dude. wbu?", messageType: "sender"),
-    ChatMessage(messageContent: "ehhhh, doing OK.", messageType: "receiver"),
-    ChatMessage(messageContent: "Is there any thing wrong?", messageType: "sender"),
-    ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
-    ChatMessage(messageContent: "How have you been?", messageType: "receiver"),
-    ChatMessage(messageContent: "Hey Kriss, I am doing fine dude. wbu?", messageType: "sender"),
-    ChatMessage(messageContent: "ehhhh, doing OK.", messageType: "receiver"),
-    ChatMessage(messageContent: "Is there any thing wrong?", messageType: "sender"),
+    ChatMessage(messageContent: "Hi, i'm currently at site 165800L for quick ssv", messageType: "sender"),
+    ChatMessage(messageContent: "Got it, 165800L it is.", messageType: "receiver"),
+    ChatMessage(messageContent: "Do a check of avarilable technologies  ", messageType: "sender"),
+    ChatMessage(messageContent: "2G Status is the following: 165800D ACTIVE ,165800E ACTIVE ,165800F ACTIVE", messageType: "receiver"),
+    ChatMessage(messageContent: "3G technology doesn't exist", messageType: "receiver"),
+    ChatMessage(messageContent: "4G status is: 165800T UNLOCKED ,165800R UNLOCKED ,165800S UNLOCKED", messageType: "receiver"),
+
+    ChatMessage(messageContent: "I need sector 1 to be locked for 4G band L1800", messageType: "sender"),
+    ChatMessage(messageContent: "Sector 1 band L1800 for 4G is locked now.", messageType: "receiver"),
+    
   ]
   );
  @override
@@ -193,6 +237,7 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
   @override
   Widget build(BuildContext context) {
     ScrollController _scrollController = ScrollController();
+    bool isSwitched= globals.humanhandoff; 
 
     void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -226,7 +271,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                 ),
                 SizedBox(width: 2,),
                 CircleAvatar(
-                  backgroundImage: AssetImage('Assets/images/image1.jpg'),
+                  backgroundImage: AssetImage('Assets/images/bot.png'),
                   maxRadius: 20,
                 ),
                 SizedBox(width: 12,),
@@ -235,13 +280,25 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
-                      Text("Kriss Benwat",style: TextStyle( fontSize: 16 ,fontWeight: FontWeight.w600),),
+                      Text("Drive Test bot",style: TextStyle( fontSize: 16 ,fontWeight: FontWeight.w600),),
                       SizedBox(height: 6,),
                       Text("Online",style: TextStyle(color: Colors.grey.shade600, fontSize: 13),),
                     ],
                   ),
+                ),Switch(value: isSwitched , onChanged: (value){
+
+  globals.humanhandoff= !globals.humanhandoff ;
+  print("glooo"+globals.humanhandoff.toString());
+  setState((){
+    isSwitched=value;
+  });
+}), Text(
+              globals.humanhandoff ? "human" : "bot",
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+              ),          
                 ),
-                Icon(Icons.settings,color: Colors.black54,),
               ],
             ),
           ),
@@ -263,6 +320,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                   child: Container( //
                   padding: EdgeInsets.only(left: 14,right: 14,top: 10,bottom: 10),
                   child: Align(
+                    
                     alignment: (messages[index].messageType == "receiver"?Alignment.topLeft:Alignment.topRight),
                     child: Container(
                       decoration: BoxDecoration(
@@ -270,7 +328,8 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                         color: (messages[index].messageType  == "receiver"?Colors.grey.shade200:Colors.blue[200]),
                       ),
                       padding: EdgeInsets.all(16),
-                      child: Text(messages[index].messageContent, style: TextStyle(fontSize: 15),),
+                  constraints: BoxConstraints(minWidth: 100, maxWidth: 200),
+                      child: Flexible( child: Text(messages[index].messageContent, overflow: TextOverflow.visible,style: TextStyle(fontSize: 15),)),
                     ),
                   ),
                 ),
@@ -287,19 +346,6 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
               color: Colors.white,
               child: widget.roomprovider?.getCurrentSession()!=null ? Row(
                 children: <Widget>[
-                   GestureDetector(
-                    onTap: (){
-                    },
-                    child: Container(
-                      height: 30,
-                      width: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.lightBlue,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Icon(Icons.add, color: Colors.white, size: 20, ),
-                    ),
-                  ),
                   SizedBox(width: 15,),
                   Expanded(
                     child: widget.roomprovider?.getCurrentSession()!=null ? TextField(
@@ -310,20 +356,36 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                         
                       ),
                       controller: sendMessageController
-                    ): SizedBox() ,
+                    ): SizedBox()
                   ),
                   SizedBox(width: 15,),
                   FloatingActionButton(
                     onPressed: () async {
                      
                       if(sendMessageController.text.isNotEmpty){
+                        Map messageMap={
+    'text':sendMessageController.text,
+    'roomID': widget.conversation_id,
+    'userName': "globals.userprofile.username"
+  };
+          ChatMessage newMssg =  ChatMessage(messageContent: sendMessageController.text, messageType: "sender");
+
+        
+
+          
+    if(globals.humanhandoff){
+  socket.emit('send-message', messageMap);
+  conversation.addSocketEmitToContainer(newMssg);}else{
                         await sendNewMssg(sendMessageController.text);
+
+
                         SchedulerBinding.instance.addPostFrameCallback((_) {
                  _scrollController.animateTo(
                  _scrollController.position.maxScrollExtent,
                  duration: const Duration(milliseconds: 1),
                  curve: Curves.fastOutSlowIn);
                  });
+            }
                         //String mssg = sendMessageController.text;
                         //messages_queue.add(ChatMessage(messageContent: mssg, messageType: "sender"));
                         //fetchDataAndAssign(1 , mssg);
@@ -343,7 +405,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                   ),
                 ],
                 
-              ): SizedBox(),
+              ): SizedBox(child:Text("Session ended you cannot send a message",style: TextStyle(color: Colors.black45, fontFamily: "roboto",fontSize: 16 ))),
             ),
           ),
         ],
@@ -357,7 +419,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 Future<bool> sendNewMssg(String message) async {
         ChatMessage newMssg =  ChatMessage(messageContent: message, messageType: "sender");
         
-      final url = Uri.parse('http://e5c5-41-108-115-212.ngrok-free.app/botmessage/'); // rasa API server url  
+      final url = Uri.parse('http://0c1f-41-108-78-209.ngrok-free.app/botmessage/'); // rasa API server url  
       final /*Map<String, dynamic> */ body = jsonEncode({
       
           'sender': widget.conversation_id.toString(), 

@@ -17,11 +17,26 @@ class _profilPagetState extends State<profilPage> {
   String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
   return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
 }
+
+  static String calculateTimeDifferenceBetween(
+      {required DateTime startDate, required DateTime endDate}) {
+    int seconds = endDate.difference(startDate).inSeconds;
+    if (seconds < 60)
+      return '$seconds second';
+    else if (seconds >= 60 && seconds < 3600)
+      return '${startDate.difference(endDate).inMinutes.abs()} minute';
+    else if (seconds >= 3600 && seconds < 86400)
+      return '${startDate.difference(endDate).inHours.abs()} hour';
+    else
+      return '${startDate.difference(endDate).inDays.abs()} day';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile Details'),
+        backgroundColor: Colors.indigo[900]
       ),
       body: Container(
         padding: EdgeInsets.all(16.0),
@@ -33,7 +48,7 @@ class _profilPagetState extends State<profilPage> {
               backgroundImage: NetworkImage(globals.apiUrl+globals.userprofile.avatar), // Replace with your own image path
             ),
             SizedBox(height: 16.0),
-            Text(globals.userprofile.first_name+ globals.userprofile.last_name,
+            Text(globals.userprofile.first_name+" " + globals.userprofile.last_name,
               style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8.0),
@@ -55,7 +70,7 @@ class _profilPagetState extends State<profilPage> {
             ),
             SizedBox(height: 8.0),
             Text(
-              'Online since '+_printDuration(DateTime.now().difference(DateTime.parse(globals.userprofile.last_login))),
+              'Online since '+calculateTimeDifferenceBetween(endDate:DateTime.now(), startDate: DateTime.parse(globals.userprofile.last_login)),
               style: TextStyle(fontSize: 16.0),
             ),
              SizedBox(height: 8.0),

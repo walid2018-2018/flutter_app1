@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http ;
 import 'dart:convert';
 import 'package:chat1/models/user_profil.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:chat1/Screens/loginPage.dart';
 import 'package:chat1/models/globals.dart' as globals ;
@@ -22,6 +23,18 @@ class RoomsProvider extends ChangeNotifier {
   int? currentsession =null;
 
   int? getCurrentSession ()=> currentsession;
+  static String calculateTimeDifferenceBetween(
+      {required DateTime startDate, required DateTime endDate}) {
+    int seconds = endDate.difference(startDate).inSeconds;
+    if (seconds < 60)
+      return '$seconds second';
+    else if (seconds >= 60 && seconds < 3600)
+      return '${startDate.difference(endDate).inMinutes.abs()} minute';
+    else if (seconds >= 3600 && seconds < 86400)
+      return '${startDate.difference(endDate).inHours.abs()} hour';
+    else
+      return '${startDate.difference(endDate).inDays.abs()} day';
+  }
   void getRooms(int user_id) async {
     _chatRooms.clear();
     final url = Uri.parse('http://localhost');
@@ -38,9 +51,13 @@ class RoomsProvider extends ChangeNotifier {
           
           for (var j in responseList) {
             String name = j['title'];
-            String lastMessage = j['startDate'];
-            String imageURL = "Assets/images/image2.jpg";
-            String time = j['endDate'];
+            DateFormat dateFormat = DateFormat.yMMMEd();
+
+            String lastMessage ="Started "+ dateFormat.format(DateTime.parse( j['startDate']));
+            String imageURL = "Assets/images/ContentBlock.png";
+            String time = calculateTimeDifferenceBetween(endDate: DateTime.parse(j['endDate']), startDate:DateTime.parse( j['startDate']));
+
+            
             int id= j['id'];
             print("ididid"+id.toString());
             ChatSite room = ChatSite(name: name, messageText: lastMessage, imageURL: imageURL, time: time, id: id);
@@ -118,6 +135,7 @@ class ChatPage extends StatefulWidget {
 RoomsProvider rooms=RoomsProvider();
 class _ChatPageState extends State<ChatPage> {
 
+
 Future<void> _showMyDialog() async {
   return showDialog<void>(
     context: context,
@@ -129,7 +147,7 @@ Future<void> _showMyDialog() async {
           child: ListBody(
             children: <Widget>[
               Text('Contact providers for a planned session.'),
-              Text('your next session isn"t until'),
+              Text("your next session isn't until 2 hours"),
             ],
           ),
         ),
@@ -152,7 +170,6 @@ Future<void> _showMyDialog() async {
     
     super.initState();
     rooms.getRooms(user.getuserId()!);
-    // 2
     rooms.addListener(() => mounted ? setState(() { null;}) : null);
   }
 
@@ -164,6 +181,31 @@ Future<void> _showMyDialog() async {
     ChatSite(name: "Site 04", messageText: "Thankyou", imageURL: "Assets/images/image5.jpg", time: "23 Mar",id: 5),
   ];
   bool isSwitched= globals.french; 
+
+
+
+
+final List<ChatSite> _results = [];
+
+  void _handleSearch(String input) {
+  _results.clear();
+if(chatRooms !=null){
+
+for (var str in chatRooms!){
+    if(str.name.contains(input.toLowerCase())){
+      setState(() {
+        _results.add(str);
+        print("************************"+_results.toString());
+  
+      });
+    }
+  }
+}
+
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -177,25 +219,25 @@ Future<void> _showMyDialog() async {
         // Important: Remove any padding from the ListView.
         padding: EdgeInsets.zero,
         children: [
-          const DrawerHeader(
+           DrawerHeader(
+                margin: EdgeInsets.all(10.0),
             decoration: BoxDecoration(
-              color: Color.fromARGB(255, 58, 147, 189),
+            
+              image: DecorationImage(
+                
+              image: AssetImage(
+              "Assets/images/logo2.png"),
+        ),
+        
             ),
             child: Text(
-              'Drive test assistant',
+              '',
               style: TextStyle(fontSize: 35 , fontWeight: FontWeight.bold , color: Colors.white38),
               
               ),        
           ),Padding(padding: EdgeInsets.fromLTRB(20, 0, 0, 0), child:Row(
             
-            children:<Widget>[Text(
-              globals.french ? "French" : "English",
-              style: TextStyle(
-                color: Colors.black54,
-                fontWeight: FontWeight.normal,
-                fontSize: 28,
-              ),          
-                ),
+            children:<Widget>[
 Switch(value: isSwitched , onChanged: (value){
 
   globals.french= !globals.french ;
@@ -203,7 +245,13 @@ Switch(value: isSwitched , onChanged: (value){
   setState((){
     isSwitched=value;
   });
-})]
+}), Text(
+              globals.french ? "French" : "English",
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+              ),          
+                )]
             ,
           ),)
           
@@ -213,17 +261,24 @@ Switch(value: isSwitched , onChanged: (value){
             leading: Icon(
               Icons.home,
             ),
-            title: const Text('Home'),
+            title: const Text('Home',style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+              ),),
             onTap: () {
               Navigator.pop(context);
             },
           ),
 
           ListTile(
-              leading: Icon(
-                Icons.person,
-              ),
-              title: const Text('Profil'),
+              leading: CircleAvatar(
+              radius: 13.0,
+              backgroundImage: NetworkImage(globals.apiUrl+globals.userprofile.avatar), // Replace with your own image path
+            ),
+              title: const Text('Profile',style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+              ),),
               onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context){
                                                 return profilPage();
@@ -235,7 +290,10 @@ Switch(value: isSwitched , onChanged: (value){
             leading: Icon(
               Icons.help,
             ),
-            title: const Text('Help'),
+            title: const Text('Help',style: TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+              ),),
             onTap: () {
                Navigator.push(context, MaterialPageRoute(builder: (context){
                                                 return helpPage();
@@ -248,32 +306,86 @@ Switch(value: isSwitched , onChanged: (value){
 
       ),
      
-      body: SingleChildScrollView(
+      body: Stack(
+        children:<Widget>[
+      SingleChildScrollView(
+        padding: EdgeInsets.only(left: 16,right: 16,top: 10),
+
         physics: BouncingScrollPhysics(),
         child: Column(
+          
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             SafeArea(
               child: Padding(
-                padding: EdgeInsets.only(left: 16,right: 16,top: 10),
+                padding: EdgeInsets.only(left: 30,right: 30,top: 10),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Text("Conversations",style: TextStyle(fontSize: 28,fontWeight: FontWeight.bold),),
-                    Container(
-                      padding: EdgeInsets.only(left: 8,right: 8,top: 2,bottom: 2),
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.indigo[400],
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          Icon(Icons.add,color: Colors.indigo[20],size: 20,),
-                          SizedBox(width: 2,),
-                          TextButton(
-                            child: const Text("Add New", style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold , color: Colors.black87),), 
-                            onPressed: () async {
+                    Text("Chat history",style: TextStyle(fontSize: 28,fontWeight: FontWeight.w400),),
+                    
+                  ],
+                ),
+              ), 
+            ),
+            Padding(
+             padding: EdgeInsets.only(top: 16,left: 16,right: 16),
+             child :TextField(
+              
+                decoration: InputDecoration(
+                  hintText: "Search...",
+                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  prefixIcon: Icon(Icons.search,color: Colors.grey.shade600, size: 20,),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding: EdgeInsets.all(8),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(
+                          color: Colors.grey.shade100
+                      )
+                  ),
+                ), 
+//                onChanged:// _handleSearch,
+
+              ),
+            ),
+          
+                 ListView.builder(
+              itemCount: chatRooms?.length,
+              shrinkWrap: true,
+              padding: EdgeInsets.only(top: 16),
+              physics: NeverScrollableScrollPhysics(),
+              
+              itemBuilder: (context, index){ 
+                return ConversationList(name: chatRooms![index].name, messageText: chatRooms![index].messageText, imageUrl: chatRooms![index].imageURL , time: chatRooms![index].time, isMessageRead: (index == 0 || index == 3)?true:false, id:chatRooms![index].id  );
+              },
+            ),
+SizedBox(  width: 150.0,
+  height: 100.0)
+          ],
+        
+        ),
+      
+      ),Positioned(left:0,bottom:0,right:0,child:Container(
+            color: Colors.transparent,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+    mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
+
+                        children: <Widget>[Padding(padding: EdgeInsets.fromLTRB(20, 20, 20, 30), child:
+                          SizedBox(  width: 150.0,
+  height: 50.0, child:
+                          
+                          ElevatedButton(
+                            
+                  style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),   shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+    RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18.0),
+    )
+  ) ),
+                  onPressed: () async {
                               await rooms.checkIswithinTimeframe(user.getuserId()!);
 
                               if(rooms.getCurrentSession() != null){
@@ -288,50 +400,16 @@ Switch(value: isSwitched , onChanged: (value){
                                                   print("doesn't exist");
                                                 }
                               
-                            }
-                            ),         
+                            } ,
+                  child: const Text('New Chat',style: TextStyle(color: Colors.white,fontFamily: 'roboto') ),
+                ),), )
+                              
                         ],
-                      ),
-                    )
-                  ],
-                ),
-              ), 
-            ),
-            Padding(
-              padding: EdgeInsets.only(top: 16,left: 16,right: 16),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Search...",
-                  hintStyle: TextStyle(color: Colors.grey.shade600),
-                  prefixIcon: Icon(Icons.search,color: Colors.grey.shade600, size: 20,),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: EdgeInsets.all(8),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                          color: Colors.grey.shade100
-                      )
-                  ),
-                ),
-              ),
-            ),
-          ListView.builder(
-              itemCount: chatRooms?.length,
-              shrinkWrap: true,
-              padding: EdgeInsets.only(top: 16),
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index){
-                
-                return ConversationList(name: chatRooms![index].name, messageText: chatRooms![index].messageText, imageUrl: chatRooms![index].imageURL , time: chatRooms![index].time, isMessageRead: (index == 0 || index == 3)?true:false, id:chatRooms![index].id  );
-              },
-            ),
-
-
-          ],
-        ),
-      ),
-      
-    );
+                      ),),), 
+                     
+                      ]
+             
+ 
+    ));
   }
 }

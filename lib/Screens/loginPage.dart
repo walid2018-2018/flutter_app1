@@ -22,7 +22,7 @@ class UserProvider extends ChangeNotifier {
   int? getuserId() => userId;
   Future AuthenticateUser(String input_username , String password) async {
       final url = Uri.parse(globals.apiUrl+'/login/');
-      final /*Map<String, dynamic> */ body = jsonEncode({
+      final body = jsonEncode({
       
           'username': input_username,
           'password': password,
@@ -50,9 +50,7 @@ class UserProvider extends ChangeNotifier {
           if( request2.statusCode==200){
             globals.userprofile.avatar=json.decode(request2.body)["avatar"]!;
           }
-          // Handle the response data
         } else {
-          // API call failed, handle the error
          
           userId= null;
           globals.isLoggedIn=false;        
@@ -74,7 +72,7 @@ class _loginPagetState extends State<loginPage> {
   @override
   void initState() {
     super.initState();
-    // 2
+    
     user.addListener(() => mounted ? setState(() {return null;}) : null);
   }
   
@@ -90,21 +88,24 @@ class _loginPagetState extends State<loginPage> {
     final userprovider = user.userId;
 
 
-    return /*Padding*/ Scaffold(
+    return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.fromLTRB(10,80,10,10),
         child: ListView(
           children: <Widget>[
-            Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.all(10),
-                child: const Text(
-                  'Drive Test Chatbot',
-                  style: TextStyle(
-                      color: Colors.indigo,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 35),
-                )),
+            Container(    
+              padding: const EdgeInsets.all(20),
+  
+              height: 40.0,
+      width: 20.0,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(
+              "Assets/images/logo2.png"),
+        ),
+        shape: BoxShape.rectangle,
+      ),
+),
             Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(30),
@@ -149,8 +150,12 @@ class _loginPagetState extends State<loginPage> {
                 height: 50,
                 padding: const EdgeInsets.fromLTRB(10,0,10,0),
                 child: ElevatedButton(
-                  style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.indigo[900]) ),
-                  child: const Text('Login'),
+                  style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.indigo[900]),   shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+    RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18.0),
+    )
+  ) ),
+                  child: const Text('Login',style: TextStyle(color: Colors.white,fontFamily: 'roboto') ),
                   onPressed: () async {
 
                     await user.AuthenticateUser(usernameController.text, passwordController.text);
@@ -198,28 +203,3 @@ class _loginPagetState extends State<loginPage> {
 
 
 
-/*
-
-
-  static Future<String> getUserProfile() async {
-    var loginDetails = await SharedService.loginDetails();
-
-    Map<String, String> requestHeaders = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Basic ${loginDetails!.key}'
-    };
-
-    var url = Uri.parse(Config.apiURL + Config.userProfileAPI);
-    var response = await client.get(
-      url,
-      headers: requestHeaders,
-    );
-    print(response.body);
-
-    if (response.statusCode == 200) {
-      return response.body;
-      print(response.body);
-    } else {
-      return "";
-    }
-  }*/

@@ -6,11 +6,7 @@ import 'package:chat1/Screens/loginPage.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget{
-  //int user_id;
-  //String username;
- // final User user ; 
 
-//  HomePage();
   const HomePage({super.key,  required this.user});
   final UserProvider user;
 
@@ -28,29 +24,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: 
       ChatPage(user : user), 
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.indigo[500],
-        unselectedItemColor: Colors.grey.shade600,
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
-        type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Chat',
-            
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group_work),
-            label: 'Groupes',
-            
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_box),
-            label: 'Profile',
-          ),
-        ],
-      ),
     );
     
     ;

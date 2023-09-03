@@ -23,16 +23,19 @@ class _registrationPagetState extends State<registrationPage> {
         padding: const EdgeInsets.all(10),
         child: ListView(
           children: <Widget>[
-            Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.all(10),
-                child: const Text(
-                  'Drive Test Chatbot',
-                  style: TextStyle(
-                      color: Colors.indigo,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 26),
-                )),
+             Container(    
+              padding: const EdgeInsets.all(20),
+  
+              height: 40.0,
+      width: 20.0,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(
+              "Assets/images/logo2.png"),
+        ),
+        shape: BoxShape.rectangle,
+      ),
+),
             Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.all(10),

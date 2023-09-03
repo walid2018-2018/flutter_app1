@@ -174,8 +174,13 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
           if (jsonResponse.isNotEmpty) {
             print("----------------------");
             print(jsonResponse); //consider multiple dispatches from rasa actions
-            return [ChatMessage(messageContent: message, messageType: "sender"),ChatMessage(messageContent: jsonResponse[0]["text"] , messageType: "receiver")];  // Assuming Rasa returns a 'text' key
-          } 
+            List <ChatMessage> L = null ; 
+            L.add(ChatMessage(messageContent: message, messageType: "sender"))
+            for (int i = 0; i < jsonResponse.length; i++) {
+              L.add(ChatMessage(messageContent: jsonResponse[i]["text"] , messageType: "receiver"))
+            return L;  // Assuming Rasa returns a 'text' key
+          }
+          }
           else {
             if(jsonResponse.isEmpty){
             }

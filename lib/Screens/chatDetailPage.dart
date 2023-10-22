@@ -24,18 +24,22 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 //List<ChatMessage> list_Q_R = [];
 
 Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
-      final url = Uri.parse('http://localhost:5005/webhooks/rest/webhook');
+      final url = Uri.parse('http://4624-41-108-100-124.ngrok-free.app/webhooks/rest/webhook');
       final /*Map<String, dynamic> */ body = jsonEncode({
       
-    //   'sender_id': sender_id,
+       'sender_id': sender_id,
           'message': message,
         });
           
       try {
-       final response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
-        if (response.statusCode == 202) {
-          final List<dynamic> jsonResponse = json.decode(response.body);
+       var response = await http.post(url,headers: {'Content-Type': 'application/json'} ,body: body);
+        var jsonResponse = json.decode(response.body);
+        print(jsonResponse);
+
+          
           if (jsonResponse.isNotEmpty) {
+            print("----------------------");
+            print(jsonResponse);
             return [ChatMessage(messageContent: message, messageType: "sender"),ChatMessage(messageContent: jsonResponse[0]['text'] , messageType: "receiver")];  // Assuming Rasa returns a 'text' key
           } 
           else {
@@ -48,7 +52,7 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
              }
           }
               //return true;
-        }
+      
 
           // Handle the response data
 
@@ -65,7 +69,7 @@ Future<List<ChatMessage>> sendMssgRasa(int sender_id, String message) async {
     // Call the function and wait for the result
     List<ChatMessage> list_Q_R = await sendMssgRasa(sender_id, messsage);
     // Assign the result to the itemList
-    messages_queue.add(list_Q_R[0]);  // technician message 
+    //messages_queue.add(list_Q_R[0]);  // technician message 
     messages_queue.add(list_Q_R[1]);  // bot response
     setState(() {
       //list_Q_R = result; 
@@ -212,7 +216,8 @@ Queue<ChatMessage> messages_queue = ListQueue.of([
                      
                       if(sendMessageController.text.isNotEmpty){
                      //   sendNewMssg(sendMessageController.text);
-                        String mssg = Text(sendMessageController.text).toString();
+                        String mssg = sendMessageController.text;
+                        messages_queue.add(ChatMessage(messageContent: mssg, messageType: "sender"));
                         fetchDataAndAssign(1 , mssg);
                        
                        
